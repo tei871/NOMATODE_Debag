@@ -41,7 +41,7 @@
             z-index: 10;
         }
         
-        /* レバーのデザインを初期の●スタイルに変更 */
+        /* レバーのデザイン */
         #stick-base { position: fixed; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; display: none; border: 2px solid rgba(0,255,0,0.2); z-index: 1000; touch-action: none; }
         #stick-knob { position: absolute; top: 30px; left: 30px; width: 60px; height: 60px; background: rgba(0, 255, 0, 0.3); border-radius: 50%; pointer-events: none; transition: transform 0.05s linear; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(0, 255, 0, 0.5); }
 
@@ -218,7 +218,7 @@
         if (t && t.active) { 
             ctx.save();
             ctx.fillStyle = "#0ff";
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 6;
             ctx.shadowColor = "#0ff";
             ctx.beginPath(); 
             ctx.arc(t.x, t.y, 8, 0, Math.PI*2); 
@@ -244,3 +244,4 @@
 </script>
 </body>
 </html>
+
