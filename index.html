@@ -6,48 +6,13 @@
     <title>NEMATODE: Triple Crisis</title>
     <style>
         body { background: #050505; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'MS Gothic', 'Courier New', monospace; overflow: hidden; color: #00ff00; touch-action: none; }
-        
-        /* コンテナのサイズとマージンを維持 */
-        #container { 
-            position: relative; 
-            width: 400px; 
-            height: 400px; 
-            background: #000; 
-            max-width: 95vw; 
-            max-height: 95vw; 
-            overflow: hidden; 
-        }
-        
+        #container { position: relative; width: 400px; height: 400px; background: #000; max-width: 95vw; max-height: 95vw; overflow: hidden; }
         canvas { border: 4px solid #111; image-rendering: pixelated; width: 100%; height: 100%; background: #000; display: block; box-sizing: border-box; }
-        
-        /* UIをコンテナ内の最前面に確実に表示 */
-        #ui { 
-            position: absolute; 
-            top: 15px; 
-            left: 15px; 
-            right: 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 14px; 
-            text-shadow: 2px 2px #000; 
-            pointer-events: none; 
-            z-index: 110; 
-        }
-        
-        .vignette { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; 
-            box-shadow: inset 0 0 120px rgba(0,0,0,0.95); 
-            outline: 100px solid black; 
-            z-index: 50;
-        }
-        
-        /* 操作系UI */
+        #ui { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 14px; text-shadow: 2px 2px #000; pointer-events: none; z-index: 110; }
+        .vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,0.95); outline: 100px solid black; z-index: 50; }
         #stick-base { position: fixed; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; display: none; border: 2px solid rgba(0,255,0,0.2); z-index: 1000; touch-action: none; }
         #stick-knob { position: absolute; top: 30px; left: 30px; width: 60px; height: 60px; pointer-events: none; transition: transform 0.05s linear; display: flex; justify-content: center; align-items: center; }
         #knob-canvas { width: 48px; height: 48px; image-rendering: pixelated; }
-
-        /* スクリーン関連 */
         #intro-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; cursor: pointer; }
         #intro-text { color: #ccc; font-size: 14px; line-height: 2.2; letter-spacing: 1px; max-width: 320px; text-align: left; z-index: 202; pointer-events: none; text-shadow: 0 0 10px #000; display: none; }
         #click-to-start { color: #00ff00; font-size: 12px; z-index: 203; border: 1px solid #00ff00; padding: 10px 20px; background: rgba(0,255,0,0.1); }
@@ -62,7 +27,7 @@
     <canvas id="introCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.15; z-index:201;"></canvas>
     <div id="click-to-start">[ TAP TO INITIALIZE SYSTEM ]</div>
     <div id="intro-text">
-        あるとき、月から得体のしれぬものが居住区に落ち、なかから蠢く線虫が現れ、人々の姿が消えた。古書によれば、残された「緑の祭壇」に遺物を集めることで線虫らを浄化できると記述がある。記録をもとに調査員は向かった。<br><br>
+        月から得体のしれぬものが居住区に落ち、なかから蠢く線虫が現れ、人々の姿が消えた。古書によれば、残された「緑の祭壇」に遺物を集めることで線虫らを浄化できると記述がある。記録をもとに調査員は向かった。<br><br>
         <span style="color:#666; font-size:10px;">[ TAP / ENTER / SPACE TO SKIP ]</span>
     </div>
 </div>
@@ -94,7 +59,6 @@
 </div>
 
 <script>
-    // 基本設定・変数
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     const introCanvas = document.getElementById('introCanvas'), ictx = introCanvas.getContext('2d'), knob = document.getElementById('stick-knob');
     const knobCanvas = document.getElementById('knob-canvas'), kctx = knobCanvas.getContext('2d');
@@ -107,7 +71,18 @@
 
     const charSprite = [[0,0,0,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,0,0],[1,1,1,1,1,1,0,0],[0,0,1,1,1,1,0,0],[0,0,1,1,1,1,0,0],[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0]];
 
-    function drawKnobIcon() { kctx.clearRect(0, 0, 8, 8); charSprite.forEach((row, y) => { row.forEach((pixel, x) => { if (pixel) { kctx.fillStyle = "#00ff00"; kctx.fillRect(x, y, 1, 1); } }); }); }
+    // --- レバーを●のデザインに戻す ---
+    function drawKnobIcon() {
+        kctx.clearRect(0, 0, 8, 8);
+        kctx.fillStyle = "rgba(0, 255, 0, 0.5)";
+        kctx.beginPath();
+        kctx.arc(4, 4, 3.5, 0, Math.PI * 2);
+        kctx.fill();
+        kctx.fillStyle = "#00ff00";
+        kctx.beginPath();
+        kctx.arc(4, 4, 1, 0, Math.PI * 2);
+        kctx.fill();
+    }
     drawKnobIcon();
 
     function drawPlayer(x, y, color, direction, isMoving) {
@@ -131,7 +106,6 @@
         ctx.restore();
     }
 
-    // --- 音響系 ---
     function playStepSound() { if (!audioCtx) return; const now = audioCtx.currentTime; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(80, now); o.frequency.exponentialRampToValueAtTime(40, now + 0.1); g.gain.setValueAtTime(0.04, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.1); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(now + 0.1); }
     function handleIntroClick(e) { if (e) { e.preventDefault(); e.stopPropagation(); } const now = Date.now(); if (!audioStarted) { audioStarted = true; lastIntroActionTime = now; document.getElementById('click-to-start').style.display = 'none'; document.getElementById('intro-text').style.display = 'block'; startIntroAudio(); } else { if (now - lastIntroActionTime > 500) skipIntro(); } }
     function startIntroAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); if(introBGM) return; const mainG = audioCtx.createGain(); mainG.gain.setValueAtTime(0, audioCtx.currentTime); mainG.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 3); mainG.connect(audioCtx.destination); const o = audioCtx.createOscillator(); const lfo = audioCtx.createOscillator(), lfoG = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = 55; lfo.frequency.value = 0.15; lfoG.gain.value = 2; lfo.connect(lfoG); lfoG.connect(o.frequency); o.connect(mainG); o.start(); lfo.start(); const pianoInterval = setInterval(() => { if (state !== "intro") { clearInterval(pianoInterval); return; } playPianoNote(mainG); }, 2500); playPianoNote(mainG); introBGM = {o, mainG, lfo, interval: pianoInterval}; }
@@ -140,8 +114,6 @@
     function skipIntro() { if (state !== "intro" || !audioStarted) return; state = "title"; stopIntroAudio(); document.getElementById('intro-screen').style.display = 'none'; document.getElementById('start-screen').style.display = 'block'; }
     function updateLogoBlink() { if (state !== "title") return; if (Math.random() < 0.02) { const chars = document.querySelectorAll('.logo-char'), target = chars[Math.floor(Math.random() * chars.length)]; target.classList.add('blink-off'); setTimeout(() => target.classList.remove('blink-off'), 50 + Math.random() * 100); } }
     function safeStopBGM() { if (bgmGain) { try { bgmGain.gain.cancelScheduledValues(0); bgmGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03); } catch(e) {} } }
-    
-    // --- ゲームシステム ---
     function initGameVars() { p = { x: 200, y: 250, speed: 4, hp: 2, maxHp: 2, hasT: false, saved: 0, invul: 0, dir: 'left', moving: false }; currentMap = 0; currentLevel = 1; frame = 0; enemies = []; rollY = 420; resetTimer = 0; noiseTimer = 0; whiteOutRadius = 0; isEndingTriggered = false; footprints = []; spawnTreasures(); updateUI(); if ('ontouchstart' in window) document.getElementById('stick-base').style.display = 'block'; state = "play"; }
     function spawnTreasures() { treasures = [null, null]; for (let i = 2; i <= 4; i++) treasures.push({ x: 50 + Math.random() * 300, y: 50 + Math.random() * 300, active: true }); }
     function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -187,7 +159,6 @@
         if (currentMap === 0) { ctx.fillStyle = "#0070c0"; ctx.fillRect(120, 0, 160, 15); ctx.fillStyle = "#fff"; ctx.fillRect(120, 15, 160, 5); ctx.fillStyle = "#00a040"; ctx.fillRect(120, 20, 160, 5); }
         if (currentMap === 1) { ctx.fillStyle = "#eee"; ctx.fillRect(50, 50, 300, 300); ctx.fillStyle = "#00a040"; ctx.fillRect(170, 40, 60, 40); }
 
-        // --- 秘宝（ARTIFACT）の補強 ---
         let t = treasures[currentMap];
         if (t && t.active) {
             ctx.save(); 
@@ -216,5 +187,4 @@
     function gameLoop() { update(); draw(); animationId = requestAnimationFrame(gameLoop); } gameLoop();
 </script>
 </body>
-
 </html>
