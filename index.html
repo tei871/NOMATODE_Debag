@@ -274,7 +274,7 @@
         }
 
         if (state === "dead") { ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,400,400); ctx.fillStyle = "#f00"; ctx.textAlign = "center"; ctx.font = "18px monospace"; ctx.fillText("ERROR: SUBJECT DECEASED", 200, 180); if(resetTimer > 60) { ctx.font = "12px monospace"; ctx.fillText("TAP / SPACE / ENTER TO RETURN", 200, 230); } }
-        else if (state === "ending") { ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(0,0,400,400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "20px serif"; ctx.fillText("PURIFICATION COMPLETE", 200, rollY); ctx.font = "14px serif"; ctx.fillText("THE WORLD IS RESTORED", 200, rollY + 60); if (rollY > 150) rollY -= 0.7; if (resetTimer > 60 && !isEndingTriggered) { ctx.font = "10px monospace"; ctx.fillStyle = "#888"; ctx.fillText("TAP / SPACE / ENTER TO FINALIZE", 200, 350); } if (whiteOutRadius > 0) { ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(200, 200, whiteOutRadius, 0, Math.PI*2); ctx.fill(); } }
+        else if (state === "ending") { ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(0,0,400,400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "20px serif"; ctx.fillText("PURIFICATION COMPLETE", 200, rollY); ctx.font = "14px serif"; ctx.fillText("THE WORLD IS RESTORED", 200, rollY + 60); if (rollY > 150) rollY -= 0.7; if (resetTimer > 60 && !isEndingTriggered) { ctx.font = "10px monospace"; ctx.fillStyle = "#888"; ctx.fillText("TAP TO FINALIZE PURIFICATION", 200, 350); } if (whiteOutRadius > 0) { ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(200, 200, whiteOutRadius, 0, Math.PI*2); ctx.fill(); } }
         if (noiseTimer > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.2})`; ctx.fillRect(0, Math.random()*400, 400, 15); }
     }
     
@@ -284,3 +284,4 @@
 </script>
 </body>
 </html>
+
