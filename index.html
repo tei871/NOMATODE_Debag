@@ -187,7 +187,7 @@
         if (currentMap === 0) { ctx.fillStyle = "#0070c0"; ctx.fillRect(120, 0, 160, 15); ctx.fillStyle = "#fff"; ctx.fillRect(120, 15, 160, 5); ctx.fillStyle = "#00a040"; ctx.fillRect(120, 20, 160, 5); }
         if (currentMap === 1) { ctx.fillStyle = "#eee"; ctx.fillRect(50, 50, 300, 300); ctx.fillStyle = "#00a040"; ctx.fillRect(170, 40, 60, 40); }
 
-        // --- 秘宝（ARTIFACT）の補強された描画 ---
+        // --- 秘宝（ARTIFACT）の補強 ---
         let t = treasures[currentMap];
         if (t && t.active) {
             ctx.save(); 
@@ -216,4 +216,5 @@
     function gameLoop() { update(); draw(); animationId = requestAnimationFrame(gameLoop); } gameLoop();
 </script>
 </body>
+
 </html>
