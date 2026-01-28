@@ -41,12 +41,11 @@
             z-index: 10;
         }
         
-        /* レバーのデザイン修正 */
         #stick-base { position: fixed; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; display: none; border: 2px solid rgba(0,255,0,0.2); z-index: 1000; touch-action: none; }
         #stick-knob { 
             position: absolute; 
-            top: 40px; left: 40px; /* 中心に配置 (120/2 - 40/2) */
-            width: 40px; height: 40px; /* サイズを少し小さく */
+            top: 40px; left: 40px; 
+            width: 40px; height: 40px; 
             background: rgba(0, 255, 0, 0.3); 
             border-radius: 50%; 
             pointer-events: none; 
@@ -111,7 +110,6 @@
 
     function drawPlayer(x, y, color, direction, isMoving) {
         ctx.save(); 
-        // 座標を整数化して切れ目を防ぐ
         ctx.translate((x - 12) | 0, (y - 12) | 0); 
         const px = 3; 
         const animFrame = isMoving ? (Math.floor(frame / 10) % 2) : -1;
@@ -124,7 +122,6 @@
                     } 
                     ctx.fillStyle = color; 
                     let drawX = direction === 'right' ? (7 - colIdx) * px : colIdx * px; 
-                    // 1px多めに塗ることで隙間（グリッド線）を埋める
                     ctx.fillRect(drawX, rowIdx * px, px + 0.5, px + 0.5); 
                 } 
             }); 
@@ -178,7 +175,6 @@
             else { stick.tapped = true; } 
         } else if (e.type === 'touchmove' && stick.active) { 
             const touch = e.touches[0], dx = touch.clientX - stick.startX, dy = touch.clientY - stick.startY, 
-            // 可動限界を35pxに抑えてはみ出しを防止
             dist = Math.min(35, Math.hypot(dx, dy)), 
             angle = Math.atan2(dy, dx); 
             stick.x = (Math.cos(angle) * dist) / 35; stick.y = (Math.sin(angle) * dist) / 35; 
@@ -197,7 +193,6 @@
     function update() { 
         if (state === "intro") { introNematodes.forEach(n => { n.angle += 0.02; n.x += Math.cos(n.angle); n.y += Math.sin(n.angle); if(n.x < 0) n.x = 400; if(n.x > 400) n.x = 0; if(n.y < 0) n.y = 400; if(n.y > 400) n.y = 0; let head = {x: n.x, y: n.y}; for(let i=0; i<n.segs.length; i++) { let target = i===0 ? head : n.segs[i-1]; n.segs[i].x += (target.x - n.segs[i].x) * 0.2; n.segs[i].y += (target.y - n.segs[i].y) * 0.2; } }); return; } 
         
-        // 移動キーを除外し、Space/Enter/タップのみを判定対象にする
         const isConfirmPressed = keys['Space'] || keys['Enter'] || stick.tapped;
 
         if (state !== "play") { 
@@ -239,7 +234,11 @@
             p.saved++; p.hasT = false; playDepositSound(); updateUI(); 
             if (p.saved >= 3) { 
                 if (currentLevel < 3) { currentLevel++; p.saved = 0; spawnTreasures(); noiseTimer = 40; playLevelUpSound(); updateUI(); updateBGM(); } 
-                else { state = "ending"; resetTimer = 0; rollY = 400; safeStopBGM(); playFomilyBell(true); isEndingTriggered = false; } 
+                else { 
+                    state = "ending"; resetTimer = 0; rollY = 400; safeStopBGM(); playFomilyBell(true); isEndingTriggered = false; 
+                    // クリアした瞬間の入力をリセット
+                    stick.tapped = false;
+                } 
             } 
         }
         
@@ -284,4 +283,3 @@
 </script>
 </body>
 </html>
-
