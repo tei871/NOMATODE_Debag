@@ -10,7 +10,6 @@
         canvas { border: 2px solid #222; image-rendering: pixelated; width: 100%; height: 100%; background: #000; display: block; }
         #ui { position: absolute; top: -45px; width: 100%; display: flex; justify-content: space-between; font-size: 14px; text-shadow: 2px 2px #000; pointer-events: none; }
         
-        /* 影のフィルター（ビネット）の修正：範囲を広げ、隅の途切れを解消 */
         .vignette { 
             position: absolute; 
             top: -2px; left: -2px; right: -2px; bottom: -2px; 
@@ -29,7 +28,6 @@
         .blink-off { opacity: 0.1; }
         #msg-layer { position: absolute; bottom: 80px; width: 100%; text-align: center; color: #fff; font-size: 14px; font-weight: bold; pointer-events: none; z-index: 150; text-shadow: 2px 2px #000; display: none; letter-spacing: 1px; }
 
-        /* バージョン表記のスタイル */
         #version-tag {
             position: absolute;
             bottom: 10px;
@@ -60,7 +58,7 @@
         <span style="color:#ff0000;">- Complete 3 levels to purify.</span>
     </p>
     <button onmousedown="startGame()" ontouchstart="startGame()" style="padding:12px 40px; cursor:pointer; background:#111; color:#ff0000; border:1px solid #ff0000; font-weight: bold;">[ START INVESTIGATION ]</button>
-    <div id="version-tag">ver 1.01</div>
+    <div id="version-tag">ver 1.02</div>
 </div>
 
 <div id="container">
@@ -82,6 +80,7 @@
     
     let audioCtx = null, bgmNode = null, bgmGain = null, introBGM = null, p, currentMap, state = "intro", frame = 0, enemies = [], rollY = 420, resetTimer = 0, currentLevel = 1, treasures = [], noiseTimer = 0, animationId = null, audioStarted = false, whiteOutRadius = 0, lastIntroActionTime = 0;
     let isEndingTriggered = false; 
+    let titleGuardTimer = 0; // タイトル画面の誤操作防止タイマー
     const keys = {}; let stick = { active: false, x: 0, y: 0, startX: 0, startY: 0, tapped: false };
     const levels = [{ name: "LEVEL 1: GREEN DEPTHS", color: "#080808", mapColor: "#050a05", enemyCount: 2, enemyTypes: [0] }, { name: "LEVEL 2: BLOOD LAB", color: "#1a0505", mapColor: "#220808", enemyCount: 3, enemyTypes: [0, 1] }, { name: "LEVEL 3: CYAN ABYSS", color: "#050a1a", mapColor: "#081a22", enemyCount: 4, enemyTypes: [0, 1, 2] }];
     let introNematodes = Array.from({length: 8}, () => ({ x: Math.random() * 400, y: Math.random() * 400, segs: Array.from({length: 20}, () => ({x:0, y:0})), angle: Math.random() * Math.PI * 2 }));
@@ -107,7 +106,7 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
         if(introBGM) return;
         const mainG = audioCtx.createGain(); mainG.gain.setValueAtTime(0, audioCtx.currentTime); mainG.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 3); mainG.connect(audioCtx.destination);
-        const o = audioCtx.createOscillator(); const lfo = audioCtx.createOscillator(), lfoG = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = 55; lfo.frequency.value = 0.15; lfoG.gain.value = 2; lfo.connect(lfoG); lfoG.connect(o.frequency); o.connect(mainG); o.start(); lfo.start();
+        const o = audioCtx.createOscillator(), lfo = audioCtx.createOscillator(), lfoG = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = 55; lfo.frequency.value = 0.15; lfoG.gain.value = 2; lfo.connect(lfoG); lfoG.connect(o.frequency); o.connect(mainG); o.start(); lfo.start();
         const pianoInterval = setInterval(() => { if (state !== "intro") { clearInterval(pianoInterval); return; } playPianoNote(mainG); }, 2500);
         playPianoNote(mainG); introBGM = {o, mainG, lfo, interval: pianoInterval};
     }
@@ -121,10 +120,46 @@
     }
 
     function stopIntroAudio() { if (introBGM) { introBGM.mainG.gain.setTargetAtTime(0, audioCtx.currentTime, 0.8); setTimeout(() => { if(introBGM) {introBGM.o.stop(); introBGM.lfo.stop(); introBGM = null;} }, 1200); } }
-    function skipIntro() { if (state !== "intro" || !audioStarted) return; state = "title"; stopIntroAudio(); document.getElementById('intro-screen').style.display = 'none'; document.getElementById('start-screen').style.display = 'block'; }
+    
+    function backToTitle() {
+        state = "title";
+        titleGuardTimer = 30; // 0.5秒のガード(60fps想定)
+        stick.tapped = false;
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    function skipIntro() { if (state !== "intro" || !audioStarted) return; stopIntroAudio(); document.getElementById('intro-screen').style.display = 'none'; backToTitle(); }
     function updateLogoBlink() { if (state !== "title") return; if (Math.random() < 0.02) { const chars = document.querySelectorAll('.logo-char'), target = chars[Math.floor(Math.random() * chars.length)]; target.classList.add('blink-off'); setTimeout(() => target.classList.remove('blink-off'), 50 + Math.random() * 100); } }
     function safeStopBGM() { if (bgmGain) { try { bgmGain.gain.cancelScheduledValues(0); bgmGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03); } catch(e) {} } }
-    
+
+    function playFootstep(delay) {
+        const now = audioCtx.currentTime + delay;
+        const duration = 0.2;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(60, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + duration);
+        g.gain.setValueAtTime(0.15, now);
+        g.gain.linearRampToValueAtTime(0, now + duration);
+        osc.connect(g); g.connect(audioCtx.destination);
+        const bufferSize = audioCtx.sampleRate * duration;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = audioCtx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.value = 400;
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + duration);
+        noise.start(now); noise.stop(now + duration);
+    }
+
     function initGameVars() { 
         p = { x: 200, y: 250, speed: 4, hp: 2, maxHp: 2, hasT: false, saved: 0, invul: 0 }; 
         currentMap = 0; currentLevel = 1; frame = 0; enemies = []; rollY = 420; resetTimer = 0; 
@@ -152,13 +187,11 @@
             const touchY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
             const tx = touchX - rect.left;
             const ty = touchY - rect.top;
-            
-            if (state !== "play") { 
+            stick.tapped = false;
+            if (state !== "play" && state !== "transitioning") { 
                 stick.tapped = true; 
-            } else if (tx < 200 && ty > 200) { 
-                stick.active = true; 
-                stick.startX = touchX; 
-                stick.startY = touchY; 
+            } else if (state === "play" && tx < 200 && ty > 200) { 
+                stick.active = true; stick.startX = touchX; stick.startY = touchY; 
             } else { 
                 stick.tapped = true; 
             } 
@@ -171,35 +204,59 @@
     
     window.addEventListener('touchstart', handleGlobalInput, {passive: false}); window.addEventListener('touchmove', handleGlobalInput, {passive: false}); window.addEventListener('touchend', handleGlobalInput);
     window.addEventListener('mousedown', handleGlobalInput); window.addEventListener('mouseup', handleGlobalInput);
+    window.onkeydown = e => { keys[e.code] = true; if (state === "intro") { handleIntroClick(); } else if (state === "title" && titleGuardTimer === 0 && (e.code === "Enter" || e.code === "Space")) { startGame(); } }; window.onkeyup = e => keys[e.code] = false;
     
-    window.onkeydown = e => { keys[e.code] = true; if (state === "intro") { handleIntroClick(); } else if (state === "title" && (e.code === "Enter" || e.code === "Space")) { startGame(); } }; window.onkeyup = e => keys[e.code] = false;
-    
-    function startGame() { initAudio(); document.getElementById('start-screen').style.display = 'none'; initGameVars(); updateBGM(); if(!animationId) gameLoop(); }
+    function startGame() { 
+        if (titleGuardTimer > 0) return; // ガード中は開始不可
+        initAudio(); 
+        document.getElementById('start-screen').style.display = 'none'; 
+        state = "transitioning";
+        playFootstep(0.1); playFootstep(0.4); playFootstep(0.7);
+        setTimeout(() => {
+            initGameVars(); 
+            updateBGM(); 
+            if(!animationId) gameLoop(); 
+        }, 1000); 
+    }
+
     function updateUI() { document.getElementById('status-text').innerText = levels[currentLevel-1].name; document.getElementById('t-count').innerText = p.saved; document.getElementById('hearts').innerHTML = "■".repeat(Math.max(0, p.hp)); }
     
     function update() { 
         if (state === "intro") { introNematodes.forEach(n => { n.angle += 0.02; n.x += Math.cos(n.angle); n.y += Math.sin(n.angle); if(n.x < 0) n.x = 400; if(n.x > 400) n.x = 0; if(n.y < 0) n.y = 400; if(n.y > 400) n.y = 0; let head = {x: n.x, y: n.y}; for(let i=0; i<n.segs.length; i++) { let target = i===0 ? head : n.segs[i-1]; n.segs[i].x += (target.x - n.segs[i].x) * 0.2; n.segs[i].y += (target.y - n.segs[i].y) * 0.2; } }); return; } 
+        if (state === "transitioning") return;
+        if (state === "title") {
+            if (titleGuardTimer > 0) titleGuardTimer--;
+            updateLogoBlink();
+            if (titleGuardTimer === 0 && (keys['Space'] || keys['Enter'] || stick.tapped)) {
+                startGame();
+                stick.tapped = false;
+            }
+            return;
+        }
         if (state !== "play") { 
-            if (state === "title") updateLogoBlink(); 
             resetTimer++; 
-            if (state === "ending") { 
-                if (resetTimer > 60 && (keys['Space'] || keys['Enter'] || stick.tapped)) { 
-                    isEndingTriggered = true; 
-                    stick.tapped = false;
-                }
-                if (isEndingTriggered) {
-                    whiteOutRadius += 8; 
-                    if (whiteOutRadius > 500) { 
-                        state = "title"; 
-                        document.getElementById('start-screen').style.display = 'block'; 
+            if (resetTimer > 120) { 
+                if (keys['Space'] || keys['Enter'] || stick.tapped) {
+                    if (state === "ending") {
+                        if (!isEndingTriggered) {
+                            isEndingTriggered = true;
+                            stick.tapped = false;
+                        }
+                    } else { 
+                        backToTitle();
                     }
                 }
-            } else if (resetTimer > 60 && (keys['Space'] || keys['Enter'] || stick.tapped)) { 
-                stick.tapped = false; state = "title"; 
-                document.getElementById('start-screen').style.display = 'block'; 
+            }
+            
+            if (state === "ending" && isEndingTriggered) {
+                whiteOutRadius += 8;
+                if (whiteOutRadius > 500) {
+                    backToTitle();
+                }
             }
             return; 
         } 
+
         if (noiseTimer > 0) { noiseTimer--; return; }
         let mvX = 0, mvY = 0; if (keys['ArrowUp'] || keys['KeyW']) mvY -= 1; if (keys['ArrowDown'] || keys['KeyS']) mvY += 1; if (keys['ArrowLeft'] || keys['KeyA']) mvX -= 1; if (keys['ArrowRight'] || keys['KeyD']) mvX += 1; p.x += (mvX + stick.x) * p.speed; p.y += (mvY + stick.y) * p.speed;
         let oldMap = currentMap;
@@ -208,64 +265,34 @@
         else if (currentMap === 2) { if (p.x < 0) { currentMap = 0; p.x = 380; } else { p.x = Math.min(390, p.x); p.y = Math.max(10, Math.min(390, p.y)); } }
         else if (currentMap === 3) { if (p.x > 400) { currentMap = 0; p.x = 20; } else { p.x = Math.max(10, p.x); p.y = Math.max(10, Math.min(390, p.y)); } }
         else if (currentMap === 4) { if (p.y < 0) { currentMap = 0; p.y = 380; } else { p.y = Math.min(390, p.y); p.x = Math.max(10, Math.min(390, p.x)); } }
-        
-        if (oldMap !== currentMap) { 
-            msgLayer.style.display = 'none';
-            if (currentMap === 1) { p.hp = p.maxHp; playFomilyBell(false); } 
-            enemies = []; updateBGM(); updateUI(); 
-        }
-
-        if (currentMap === 1) {
-            if (Math.abs(p.x - (piledBooks.x + 11)) < 22 && Math.abs(p.y - (piledBooks.y + 9)) < 22) {
-                msgLayer.innerText = "えっちな本だ";
-                msgLayer.style.display = 'block';
-            } else {
-                msgLayer.style.display = 'none';
-            }
-        }
-
+        if (oldMap !== currentMap) { msgLayer.style.display = 'none'; if (currentMap === 1) { p.hp = p.maxHp; playFomilyBell(false); } enemies = []; updateBGM(); updateUI(); }
+        if (currentMap === 1) { if (Math.abs(p.x - (piledBooks.x + 11)) < 22 && Math.abs(p.y - (piledBooks.y + 9)) < 22) { msgLayer.innerText = "えっちな本だ"; msgLayer.style.display = 'block'; } else { msgLayer.style.display = 'none'; } }
         if (currentMap !== 1) { const config = levels[currentLevel-1]; if (Math.random() < 0.03 && enemies.length < config.enemyCount) { const type = config.enemyTypes[Math.floor(Math.random() * config.enemyTypes.length)]; enemies.push(new Nematode(Math.random()*400, -20, type)); } for(let i = enemies.length - 1; i >= 0; i--) { enemies[i].update(p.x, p.y); if (p.invul === 0 && Math.hypot(p.x - enemies[i].x, p.y - enemies[i].y) < 15) { p.hp--; p.invul = 60; playDamageNoise(); updateUI(); if (p.hp <= 0) { state = "dead"; resetTimer = 0; safeStopBGM(); return; } } }
-        } else if (p.hasT && Math.hypot(p.x - 200, p.y - 60) < 40) { p.saved++; p.hasT = false; playDepositSound(); updateUI(); if (p.saved >= 3) { if (currentLevel < 3) { currentLevel++; p.saved = 0; spawnTreasures(); noiseTimer = 40; playLevelUpSound(); updateUI(); updateBGM(); } else { state = "ending"; resetTimer = 0; rollY = 400; safeStopBGM(); playFomilyBell(true); isEndingTriggered = false; } } }
+        } else if (p.hasT && Math.hypot(p.x - 200, p.y - 60) < 40) { p.saved++; p.hasT = false; playDepositSound(); updateUI(); if (p.saved >= 3) { if (currentLevel < 3) { currentLevel++; p.saved = 0; spawnTreasures(); noiseTimer = 40; playLevelUpSound(); updateUI(); updateBGM(); } else { state = "ending"; resetTimer = 0; rollY = 400; safeStopBGM(); playFomilyBell(true); isEndingTriggered = false; stick.tapped = false; } } }
         let t = treasures[currentMap]; if (t && t.active && !p.hasT && Math.hypot(p.x - t.x, p.y - t.y) < 25) { t.active = false; p.hasT = true; playGetSound(); }
         if (p.invul > 0) p.invul--; frame++;
     }
     
     function draw() { 
         if (state === "intro") { ictx.clearRect(0,0,400,400); introNematodes.forEach(n => { n.segs.forEach((s, i) => { ictx.fillStyle = `rgba(100, 255, 100, ${0.5 - i*0.02})`; ictx.beginPath(); ictx.arc(s.x, s.y, 4 - i*0.2, 0, Math.PI*2); ictx.fill(); }); }); return; }
-        ctx.fillStyle = "#000"; ctx.fillRect(0,0,400,400); if (state === "title") return; ctx.fillStyle = levels[currentLevel-1].mapColor; ctx.fillRect(0,0,400,400);
+        ctx.fillStyle = "#000"; ctx.fillRect(0,0,400,400); 
+        if (state === "title" || state === "transitioning") return; 
+        ctx.fillStyle = levels[currentLevel-1].mapColor; ctx.fillRect(0,0,400,400);
         if (currentMap === 0) { ctx.fillStyle = "#0070c0"; ctx.fillRect(120, 0, 160, 15); ctx.fillStyle = "#fff"; ctx.fillRect(120, 15, 160, 5); ctx.fillStyle = "#00a040"; ctx.fillRect(120, 20, 160, 5); }
         if (currentMap === 1) { 
-            ctx.fillStyle = "#eee"; ctx.fillRect(50, 50, 300, 300); 
-            ctx.fillStyle = "#00a040"; ctx.fillRect(170, 40, 60, 40); 
-            
-            const bx = piledBooks.x, by = piledBooks.y;
-            ctx.fillStyle = "rgba(0,0,0,0.15)";
-            ctx.fillRect(bx+2, by+12, 20, 6);
-            
-            ctx.fillStyle = "#556b2f"; 
-            ctx.fillRect(bx+2, by+8, 16, 6);
-            ctx.fillStyle = "#e5e5d1"; 
-            ctx.fillRect(bx+16, by+9, 2, 4);
-
-            ctx.fillStyle = "#4682b4"; 
-            ctx.fillRect(bx+1, by+4, 16, 6);
-            ctx.fillStyle = "#f5f5dc"; 
-            ctx.fillRect(bx+15, by+5, 2, 4);
-
-            ctx.fillStyle = "#2f4f4f"; 
-            ctx.fillRect(bx-2, by, 16, 6);
-            ctx.fillStyle = "#fff"; 
-            ctx.fillRect(bx+12, by+1, 2, 4);
-            ctx.fillStyle = "#8b4513";
-            ctx.fillRect(bx-2, by, 3, 6);
+            ctx.fillStyle = "#eee"; ctx.fillRect(50, 50, 300, 300); ctx.fillStyle = "#00a040"; ctx.fillRect(170, 40, 60, 40); 
+            const bx = piledBooks.x, by = piledBooks.y; ctx.fillStyle = "rgba(0,0,0,0.15)"; ctx.fillRect(bx+2, by+12, 20, 6);
+            ctx.fillStyle = "#556b2f"; ctx.fillRect(bx+2, by+8, 16, 6); ctx.fillStyle = "#e5e5d1"; ctx.fillRect(bx+16, by+9, 2, 4);
+            ctx.fillStyle = "#4682b4"; ctx.fillRect(bx+1, by+4, 16, 6); ctx.fillStyle = "#f5f5dc"; ctx.fillRect(bx+15, by+5, 2, 4);
+            ctx.fillStyle = "#2f4f4f"; ctx.fillRect(bx-2, by, 16, 6); ctx.fillStyle = "#fff"; ctx.fillRect(bx+12, by+1, 2, 4);
+            ctx.fillStyle = "#8b4513"; ctx.fillRect(bx-2, by, 3, 6);
         }
         let t = treasures[currentMap]; if (t && t.active) { ctx.fillStyle = "#0ff"; ctx.beginPath(); ctx.arc(t.x, t.y, 8, 0, Math.PI*2); ctx.fill(); }
         if (state === "play") { enemies.forEach(en => en.draw()); ctx.fillStyle = p.invul % 10 < 5 ? (p.hasT ? "#0ff" : "#0f0") : "#f00"; ctx.fillRect(p.x-5, p.y-5, 10, 10); if (p.hasT) { ctx.strokeStyle = "#0ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, 15 + Math.sin(frame/5)*3, 0, Math.PI*2); ctx.stroke(); } }
         if (state === "dead") { ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,400,400); ctx.fillStyle = "#f00"; ctx.textAlign = "center"; ctx.font = "18px monospace"; ctx.fillText("ERROR: SUBJECT DECEASED", 200, 180); if(resetTimer > 60) { ctx.font = "12px monospace"; ctx.fillText("TAP TO RETURN TO TITLE", 200, 230); } }
         else if (state === "ending") { 
             ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(0,0,400,400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "20px serif"; ctx.fillText("PURIFICATION COMPLETE", 200, rollY); ctx.font = "14px serif"; ctx.fillText("THE WORLD IS RESTORED", 200, rollY + 60); 
-            if (rollY > 150) rollY -= 0.7; 
-            if (resetTimer > 60 && !isEndingTriggered) { ctx.font = "10px monospace"; ctx.fillStyle = "#888"; ctx.fillText("TAP TO FINALIZE PURIFICATION", 200, 350); }
+            if (rollY > 150) rollY -= 0.7; if (resetTimer > 120 && !isEndingTriggered) { ctx.font = "10px monospace"; ctx.fillStyle = "#888"; ctx.fillText("TAP TO FINALIZE PURIFICATION", 200, 350); }
             if (whiteOutRadius > 0) { ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(200, 200, whiteOutRadius, 0, Math.PI*2); ctx.fill(); }
         }
         if (noiseTimer > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.2})`; ctx.fillRect(0, Math.random()*400, 400, 15); }
