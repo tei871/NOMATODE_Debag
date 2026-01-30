@@ -58,7 +58,7 @@
         <span style="color:#ff0000;">- Complete 3 levels to purify.</span>
     </p>
     <button onmousedown="startGame()" ontouchstart="startGame()" style="padding:12px 40px; cursor:pointer; background:#111; color:#ff0000; border:1px solid #ff0000; font-weight: bold;">[ START INVESTIGATION ]</button>
-    <div id="version-tag">ver1.022</div>
+    <div id="version-tag">ver 1.03</div>
 </div>
 
 <div id="container">
@@ -123,8 +123,8 @@
     
     function backToTitle() {
         state = "title";
-        titleGuardTimer = 40; // 約0.6秒のガードを設定
-        stick.tapped = false; // 入力フラグをリセット
+        titleGuardTimer = 50; 
+        stick.tapped = false;
         document.getElementById('start-screen').style.display = 'block';
     }
 
@@ -226,10 +226,7 @@
         if (state === "transitioning") return;
         
         if (state === "title") {
-            if (titleGuardTimer > 0) {
-                titleGuardTimer--;
-                stick.tapped = false; // ガード中は入力を無効化
-            }
+            if (titleGuardTimer > 0) titleGuardTimer--;
             updateLogoBlink();
             if (titleGuardTimer === 0 && (keys['Space'] || keys['Enter'] || stick.tapped)) {
                 startGame();
@@ -238,7 +235,7 @@
             return;
         }
 
-        if (state !== "play") { 
+        if (state === "dead" || state === "ending") { 
             resetTimer++; 
             if (resetTimer > 60) { 
                 if (keys['Space'] || keys['Enter'] || stick.tapped) {
@@ -247,17 +244,17 @@
                             isEndingTriggered = true;
                             stick.tapped = false;
                         }
-                    } else if (state === "dead") { 
+                    } else { 
+                        // デッド状態からのタイトル戻り
                         backToTitle();
                     }
+                    stick.tapped = false;
                 }
             }
             
             if (state === "ending" && isEndingTriggered) {
                 whiteOutRadius += 8;
-                if (whiteOutRadius > 500) {
-                    backToTitle();
-                }
+                if (whiteOutRadius > 500) backToTitle();
             }
             return; 
         } 
