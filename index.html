@@ -26,7 +26,8 @@
         #logo { font-family: 'MS Gothic', 'Courier New', monospace; letter-spacing: 5px; border-bottom: 1px solid #ff0000; padding-bottom: 10px; }
         .logo-char { display: inline-block; transition: opacity 0.05s; }
         .blink-off { opacity: 0.1; }
-        #msg-layer { position: absolute; bottom: 80px; width: 100%; text-align: center; color: #fff; font-size: 14px; font-weight: bold; pointer-events: none; z-index: 150; text-shadow: 2px 2px #000; display: none; letter-spacing: 1px; }
+        /* メッセージのフォントサイズを12pxに縮小 */
+        #msg-layer { position: absolute; bottom: 80px; width: 100%; text-align: center; color: #fff; font-size: 12px; font-weight: bold; pointer-events: none; z-index: 150; text-shadow: 2px 2px #000; display: none; letter-spacing: 1px; }
 
         #version-tag {
             position: absolute;
@@ -45,7 +46,7 @@
     <canvas id="introCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.15; z-index:201;"></canvas>
     <div id="click-to-start">[ TAP TO INITIALIZE SYSTEM ]</div>
     <div id="intro-text">
-        あるとき、月から得体のしれぬものが居住区に落ち、なかから蠢く線虫が現れ、人々の姿が消えた。古書によれば、残された「緑の祭壇」に遺物を集めることで線虫らを浄化できると記述がある。記録をもとに調査員は向かった。<br><br>
+        あるとき、月から得体のしれぬものが居住区に落ち、なかから蠢く線虫が現れ、人々の姿が消えた。古書によれば、残された「緑の祭壇」に遺物を集めることで線虫らを浄化できると記述がある。<br><br>
         <span style="color:#666; font-size:10px;">[ TAP / ENTER / SPACE TO SKIP ]</span>
     </div>
 </div>
@@ -58,7 +59,7 @@
         <span style="color:#ff0000;">- Complete 3 levels to purify.</span>
     </p>
     <button onmousedown="startGame()" ontouchstart="startGame()" style="padding:12px 40px; cursor:pointer; background:#111; color:#ff0000; border:1px solid #ff0000; font-weight: bold;">[ START INVESTIGATION ]</button>
-    <div id="version-tag">ver 1.02</div>
+    <div id="version-tag">ver1.021</div>
 </div>
 
 <div id="container">
@@ -80,7 +81,7 @@
     
     let audioCtx = null, bgmNode = null, bgmGain = null, introBGM = null, p, currentMap, state = "intro", frame = 0, enemies = [], rollY = 420, resetTimer = 0, currentLevel = 1, treasures = [], noiseTimer = 0, animationId = null, audioStarted = false, whiteOutRadius = 0, lastIntroActionTime = 0;
     let isEndingTriggered = false; 
-    let titleGuardTimer = 0; // タイトル画面の誤操作防止タイマー
+    let titleGuardTimer = 0; 
     const keys = {}; let stick = { active: false, x: 0, y: 0, startX: 0, startY: 0, tapped: false };
     const levels = [{ name: "LEVEL 1: GREEN DEPTHS", color: "#080808", mapColor: "#050a05", enemyCount: 2, enemyTypes: [0] }, { name: "LEVEL 2: BLOOD LAB", color: "#1a0505", mapColor: "#220808", enemyCount: 3, enemyTypes: [0, 1] }, { name: "LEVEL 3: CYAN ABYSS", color: "#050a1a", mapColor: "#081a22", enemyCount: 4, enemyTypes: [0, 1, 2] }];
     let introNematodes = Array.from({length: 8}, () => ({ x: Math.random() * 400, y: Math.random() * 400, segs: Array.from({length: 20}, () => ({x:0, y:0})), angle: Math.random() * Math.PI * 2 }));
@@ -123,7 +124,7 @@
     
     function backToTitle() {
         state = "title";
-        titleGuardTimer = 30; // 0.5秒のガード(60fps想定)
+        titleGuardTimer = 30; // 0.5秒のガード
         stick.tapped = false;
         document.getElementById('start-screen').style.display = 'block';
     }
@@ -207,7 +208,7 @@
     window.onkeydown = e => { keys[e.code] = true; if (state === "intro") { handleIntroClick(); } else if (state === "title" && titleGuardTimer === 0 && (e.code === "Enter" || e.code === "Space")) { startGame(); } }; window.onkeyup = e => keys[e.code] = false;
     
     function startGame() { 
-        if (titleGuardTimer > 0) return; // ガード中は開始不可
+        if (titleGuardTimer > 0) return; 
         initAudio(); 
         document.getElementById('start-screen').style.display = 'none'; 
         state = "transitioning";
@@ -235,14 +236,14 @@
         }
         if (state !== "play") { 
             resetTimer++; 
-            if (resetTimer > 120) { 
+            if (resetTimer > 60) { // 入力受付までのディレイ
                 if (keys['Space'] || keys['Enter'] || stick.tapped) {
                     if (state === "ending") {
                         if (!isEndingTriggered) {
                             isEndingTriggered = true;
                             stick.tapped = false;
                         }
-                    } else { 
+                    } else if (state === "dead") { 
                         backToTitle();
                     }
                 }
