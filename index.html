@@ -58,7 +58,7 @@
         <span style="color:#ff0000;">- Complete 3 levels to purify.</span>
     </p>
     <button onmousedown="startGame()" ontouchstart="startGame()" style="padding:12px 40px; cursor:pointer; background:#111; color:#ff0000; border:1px solid #ff0000; font-weight: bold;">[ START INVESTIGATION ]</button>
-    <div id="version-tag">ver 1.03</div>
+    <div id="version-tag">ver 1.031</div>
 </div>
 
 <div id="container">
@@ -183,14 +183,12 @@
         if (state === "intro") return; 
         if (e.type === 'touchstart' || e.type === 'mousedown') { 
             const rect = canvas.getBoundingClientRect();
-            const touchX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-            const touchY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            const touchX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX);
+            const touchY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY);
             const tx = touchX - rect.left;
             const ty = touchY - rect.top;
             
-            if (state !== "play" && state !== "transitioning") { 
-                stick.tapped = true; 
-            } else if (state === "play" && tx < 200 && ty > 200) { 
+            if (state === "play" && tx < 200 && ty > 200) { 
                 stick.active = true; stick.startX = touchX; stick.startY = touchY; 
             } else { 
                 stick.tapped = true; 
@@ -237,19 +235,18 @@
 
         if (state === "dead" || state === "ending") { 
             resetTimer++; 
-            if (resetTimer > 60) { 
+            if (resetTimer > 60) { // 1秒経過後のみ入力を受け付ける
                 if (keys['Space'] || keys['Enter'] || stick.tapped) {
                     if (state === "ending") {
-                        if (!isEndingTriggered) {
-                            isEndingTriggered = true;
-                            stick.tapped = false;
-                        }
+                        if (!isEndingTriggered) { isEndingTriggered = true; }
                     } else { 
-                        // デッド状態からのタイトル戻り
                         backToTitle();
                     }
                     stick.tapped = false;
                 }
+            } else {
+                // 待機時間中は入力を捨てる
+                stick.tapped = false;
             }
             
             if (state === "ending" && isEndingTriggered) {
@@ -273,6 +270,7 @@
         } else if (p.hasT && Math.hypot(p.x - 200, p.y - 60) < 40) { p.saved++; p.hasT = false; playDepositSound(); updateUI(); if (p.saved >= 3) { if (currentLevel < 3) { currentLevel++; p.saved = 0; spawnTreasures(); noiseTimer = 40; playLevelUpSound(); updateUI(); updateBGM(); } else { state = "ending"; resetTimer = 0; rollY = 400; safeStopBGM(); playFomilyBell(true); isEndingTriggered = false; stick.tapped = false; } } }
         let t = treasures[currentMap]; if (t && t.active && !p.hasT && Math.hypot(p.x - t.x, p.y - t.y) < 25) { t.active = false; p.hasT = true; playGetSound(); }
         if (p.invul > 0) p.invul--; frame++;
+        stick.tapped = false; // 毎フレーム入力をリセット
     }
     
     function draw() { 
@@ -304,4 +302,3 @@
 </script>
 </body>
 </html>
-
