@@ -82,7 +82,11 @@
     let isEndingTriggered = false; 
     let titleGuardTimer = 0; 
     const keys = {}; let stick = { active: false, x: 0, y: 0, startX: 0, startY: 0, tapped: false };
-    const levels = [{ name: "LEVEL 1: GREEN DEPTHS", color: "#080808", mapColor: "#050a05", enemyCount: 2, enemyTypes: [0] }, { name: "LEVEL 2: BLOOD LAB", color: "#1a0505", mapColor: "#220808", enemyCount: 3, enemyTypes: [0, 1] }, { name: "LEVEL 3: CYAN ABYSS", color: "#050a1a", mapColor: "#081a22", enemyCount: 4, enemyTypes: [0, 1, 2] }];
+    const levels = [
+        { name: "LEVEL 1: GREEN DEPTHS", color: "#080808", mapColor: "#0a1a0a", enemyCount: 2, enemyTypes: [0] }, 
+        { name: "LEVEL 2: BLOOD LAB", color: "#1a0505", mapColor: "#220808", enemyCount: 3, enemyTypes: [0, 1] }, 
+        { name: "LEVEL 3: CYAN ABYSS", color: "#050a1a", mapColor: "#081a22", enemyCount: 4, enemyTypes: [0, 1, 2] }
+    ];
     let introNematodes = Array.from({length: 8}, () => ({ x: Math.random() * 400, y: Math.random() * 400, segs: Array.from({length: 20}, () => ({x:0, y:0})), angle: Math.random() * Math.PI * 2 }));
     
     const piledBooks = { x: 320, y: 80, w: 22, h: 18 };
@@ -228,7 +232,7 @@
         if (state === "title") {
             if (titleGuardTimer > 0) {
                 titleGuardTimer--;
-                stick.tapped = false; // ガード期間中はタップを無効化
+                stick.tapped = false; 
                 return;
             }
             updateLogoBlink();
@@ -285,7 +289,15 @@
         if (state === "intro") { ictx.clearRect(0,0,400,400); introNematodes.forEach(n => { n.segs.forEach((s, i) => { ictx.fillStyle = `rgba(100, 255, 100, ${0.5 - i*0.02})`; ictx.beginPath(); ictx.arc(s.x, s.y, 4 - i*0.2, 0, Math.PI*2); ictx.fill(); }); }); return; }
         ctx.fillStyle = "#000"; ctx.fillRect(0,0,400,400); 
         if (state === "title" || state === "transitioning") return; 
-        ctx.fillStyle = levels[currentLevel-1].mapColor; ctx.fillRect(0,0,400,400);
+
+        // 背景色の描画：第1面のコンビニ内（Map 1）以外は、指定の緑色（mapColor）で塗る
+        if (currentLevel === 1 && currentMap === 1) {
+            ctx.fillStyle = "#050a05"; // コンビニ内のみ元の暗い色
+        } else {
+            ctx.fillStyle = levels[currentLevel-1].mapColor;
+        }
+        ctx.fillRect(0,0,400,400);
+
         if (currentMap === 0) { ctx.fillStyle = "#0070c0"; ctx.fillRect(120, 0, 160, 15); ctx.fillStyle = "#fff"; ctx.fillRect(120, 15, 160, 5); ctx.fillStyle = "#00a040"; ctx.fillRect(120, 20, 160, 5); }
         if (currentMap === 1) { 
             ctx.fillStyle = "#eee"; ctx.fillRect(50, 50, 300, 300); ctx.fillStyle = "#00a040"; ctx.fillRect(170, 40, 60, 40); 
