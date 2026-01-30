@@ -26,7 +26,6 @@
         #logo { font-family: 'MS Gothic', 'Courier New', monospace; letter-spacing: 5px; border-bottom: 1px solid #ff0000; padding-bottom: 10px; }
         .logo-char { display: inline-block; transition: opacity 0.05s; }
         .blink-off { opacity: 0.1; }
-        /* メッセージのフォントサイズを12pxに縮小 */
         #msg-layer { position: absolute; bottom: 80px; width: 100%; text-align: center; color: #fff; font-size: 12px; font-weight: bold; pointer-events: none; z-index: 150; text-shadow: 2px 2px #000; display: none; letter-spacing: 1px; }
 
         #version-tag {
@@ -59,7 +58,7 @@
         <span style="color:#ff0000;">- Complete 3 levels to purify.</span>
     </p>
     <button onmousedown="startGame()" ontouchstart="startGame()" style="padding:12px 40px; cursor:pointer; background:#111; color:#ff0000; border:1px solid #ff0000; font-weight: bold;">[ START INVESTIGATION ]</button>
-    <div id="version-tag">ver1.021</div>
+    <div id="version-tag">ver1.022</div>
 </div>
 
 <div id="container">
@@ -124,8 +123,8 @@
     
     function backToTitle() {
         state = "title";
-        titleGuardTimer = 30; // 0.5秒のガード
-        stick.tapped = false;
+        titleGuardTimer = 40; // 約0.6秒のガードを設定
+        stick.tapped = false; // 入力フラグをリセット
         document.getElementById('start-screen').style.display = 'block';
     }
 
@@ -188,7 +187,7 @@
             const touchY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
             const tx = touchX - rect.left;
             const ty = touchY - rect.top;
-            stick.tapped = false;
+            
             if (state !== "play" && state !== "transitioning") { 
                 stick.tapped = true; 
             } else if (state === "play" && tx < 200 && ty > 200) { 
@@ -225,8 +224,12 @@
     function update() { 
         if (state === "intro") { introNematodes.forEach(n => { n.angle += 0.02; n.x += Math.cos(n.angle); n.y += Math.sin(n.angle); if(n.x < 0) n.x = 400; if(n.x > 400) n.x = 0; if(n.y < 0) n.y = 400; if(n.y > 400) n.y = 0; let head = {x: n.x, y: n.y}; for(let i=0; i<n.segs.length; i++) { let target = i===0 ? head : n.segs[i-1]; n.segs[i].x += (target.x - n.segs[i].x) * 0.2; n.segs[i].y += (target.y - n.segs[i].y) * 0.2; } }); return; } 
         if (state === "transitioning") return;
+        
         if (state === "title") {
-            if (titleGuardTimer > 0) titleGuardTimer--;
+            if (titleGuardTimer > 0) {
+                titleGuardTimer--;
+                stick.tapped = false; // ガード中は入力を無効化
+            }
             updateLogoBlink();
             if (titleGuardTimer === 0 && (keys['Space'] || keys['Enter'] || stick.tapped)) {
                 startGame();
@@ -234,9 +237,10 @@
             }
             return;
         }
+
         if (state !== "play") { 
             resetTimer++; 
-            if (resetTimer > 60) { // 入力受付までのディレイ
+            if (resetTimer > 60) { 
                 if (keys['Space'] || keys['Enter'] || stick.tapped) {
                     if (state === "ending") {
                         if (!isEndingTriggered) {
